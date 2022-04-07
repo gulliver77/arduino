@@ -30,18 +30,21 @@ attach PWM des servos
 #define potmain A6 
 #define potpince A7 
 #define delaisAction 20
-#define delaiSetup 200
+#define delaiSetup 20
 
+// import AB (7-04-2022)
 int inbase, inbras, inavantbras, inpoignet, inmain, inpince ;
-int outbase, outbras, outavantbras, outpoignet, outmain, outpince ;
+int posbase, posbras, posavantbras, pospoignet, posmain, pospince ;
+int consignebase, consignebras, consigneavantbras, consignepoignet, consignemain, consignepince ;
+
 
 // tableau min/max/init des servomoteurs
-int minbase=0,        maxbase=180,        initbase=90,
-    minbras=45,       maxbras=135,        initbras=90,
-    minavantbras=45,  maxavantbras=135,   initavantbras=90,
-    minpoignet=45,    maxpoignet=135,     initpoignet=90,
-    minmain=45,       maxmain=135,        initmain=90,
-    minpince=0,       maxpince=90,        initpince=45;
+int minbase=0,        maxbase=180,        initbase=82,
+    minbras=0,       maxbras=135,        initbras=1,
+    minavantbras=45,  maxavantbras=135,   initavantbras=85,
+    minpoignet=45,    maxpoignet=135,     initpoignet=86,
+    minmain=45,       maxmain=135,        initmain=88,
+    minpince=100,     maxpince=155,       initpince=130;
 
 
  
@@ -70,70 +73,49 @@ void setup() {
 }
  
 void loop() {
-  inbase=analogRead(potbase);
-  outbase = map(inbase, 0, 1023, minbase, maxbase); // renvoi valeur pot en 0... 180 degrés
-  inbras=analogRead(potbras);
-  outbras = map(inbras, 0, 1023, minbras, maxbras); // renvoi valeur pot en 0... 180 degrés
-  inavantbras=analogRead(potavantbras);
-  outavantbras = map(inavantbras, 0, 1023, minavantbras, maxavantbras); // renvoi valeur pot en 0... 180 degrés
-  inpoignet=analogRead(potpoignet);
-  outpoignet = map(inpoignet, 0, 1023, minpoignet, maxpoignet); // renvoi valeur pot en 0... 180 degrés
-  inmain=analogRead(potmain);
-  outmain = map(inmain, 0, 1023, minmain, maxmain); // renvoi valeur pot en 0... 180 degrés
-  inpince=analogRead(potpince);
-  outpince = map(inpince, 0, 1023, minpince, maxpince); // renvoi valeur pot en 0... 180 degrés
-
-// affichage sur moniteur série pour contrôle  
-Serial.println("----------");
-Serial.print(" base : ");Serial.print(inbase);
-Serial.print(" bras : ");Serial.print(inbras);
-Serial.print(" avantbras  : ");Serial.print(inavantbras);
-Serial.print(" poignet : ");Serial.print(inpoignet);
-Serial.print(" main : ");Serial.print(inmain);
-Serial.print(" pince : ");Serial.println(inpince);
-Serial.print(" base : ");Serial.print(outbase);
-Serial.print(" bras : ");Serial.print(outbras);
-Serial.print(" avantbras : ");Serial.print(outavantbras);
-Serial.print(" poignet : ");Serial.print(outpoignet);
-Serial.print(" main : ");Serial.print(outmain);
-Serial.print(" pince : ");Serial.println(outpince);
-
  
+//gestion base (AB 7-04-2022)
+  consignebase = map(analogRead(potbase), 0, 1023, minbase, maxbase); //lecture du potentiomètre de la base et transformation en degrés entre minbase et maxbase
+  posbase = servobase.read();//lecture de la position du servo de la base
+  if (posbase  < consignebase)servobase.write(posbase +1);else if(posbase  > consignebase) servobase.write(posbase -1); 
 
-  Servobaseaction(outbase);
-//  servobras.write(outbras); 
-//  servoavantbras.write(outavantbras); 
-//  servopoignet.write(outpoignet);  
-//  servomain.write(outmain);
-//  servopince.write(outpince);
-delay(1000);
+//gestion bras
+  consignebras = map(analogRead(potbras), 0, 1023, minbras, maxbras);
+  posbras = servobras.read();
+  if (posbras  < consignebras)servobras.write(posbras +1);else if(posbras  > consignebras) servobras.write(posbras -1); 
+
+ //gestion avantbras  
+  consigneavantbras = map(analogRead(potavantbras), 0, 1023, minavantbras, maxavantbras);
+  posavantbras = servoavantbras.read();
+  if (posavantbras  < consigneavantbras)servoavantbras.write(posavantbras +1);else if(posavantbras  > consigneavantbras) servoavantbras.write(posavantbras -1); 
+
+ //gestion poignet  
+  consignepoignet = map(analogRead(potpoignet), 0, 1023, minpoignet, maxpoignet);
+  pospoignet = servopoignet.read();
+  if (pospoignet  < consignepoignet)servopoignet.write(pospoignet +1);else if(pospoignet  > consignepoignet) servopoignet.write(pospoignet -1); 
+
+//gestion main  
+  consignemain = map(analogRead(potmain), 0, 1023, minmain, maxmain);
+  posmain = servomain.read();
+  if (posmain  < consignemain)servomain.write(posmain +1);else if(posmain  > consignemain) servomain.write(posmain -1); 
+
+//gestion pince  
+  consignepince = map(analogRead(potpince), 0, 1023, minpince, maxpince);
+  pospince = servopince.read();
+  if (pospince  < consignepince)servopince.write(pospince +1);else if(pospince  > consignepince) servopince.write(pospince -1); 
+
+  affdebug();
+
 }
 
-// TODO régler le problème d'un retour manuel du potentiomètre
-void Servobaseaction(int consigne)
+void affdebug()
 {
-  int position=servobase.read();
-  if (position!=consigne)
-  {
-    if (position<consigne)
-    {
-      do
-      {
-        position++;
-        delay(delaisAction);
-        servobase.write(position);
-      }
-      while (position <= consigne);
-    }
-    else
-    {
-      do
-      {
-        position--;
-        delay(delaisAction);
-        servobase.write(position);
-      }
-      while (position >= consigne);
-    }
-  }
+// controle affichage entrée potentiomètre, sortie valeur map 
+//  Serial.println("----------");
+ Serial.print(" base : " + String(posbase));
+  Serial.print(" bras : " + String(posbras));
+  Serial.print(" avantbras  : "  + String(posavantbras));
+  Serial.print(" poignet : " + String(pospoignet));
+  Serial.print(" main : " + String(posmain)); 
+  Serial.println(" pince : " + String(pospince));
 }
