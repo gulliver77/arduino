@@ -58,21 +58,24 @@ rouge     180   36    44        28      94
 */
 
 // tableau min/max/init des servomoteurs
-int minbase=0,        maxbase=180,        initbase=87,
-    minbras=0,       maxbras=135,        initbras=57,
-    minavantbras=5,  maxavantbras=135,   initavantbras=103,
-    minpoignet=3,    maxpoignet=135,     initpoignet=20,
-    minmain=45,       maxmain=135,        initmain=90,
-    minpince=100,     maxpince=155,       initpince=130;
+int minbase=0,        maxbase=180,        initbase=116,
+    minbras=0,       maxbras=180,        initbras=143,
+    minavantbras=5,  maxavantbras=135,   initavantbras=28,
+    minpoignet=3,    maxpoignet=135,     initpoignet=35,
+    minmain=45,       maxmain=135,        initmain=98,
+    minpince=100,     maxpince=155,       initpince=145;
 
 boolean mode=1;
  
 Servo servobase, servobras, servoavantbras, servopoignet, servomain, servopince;  // create servo objects to control a servo 
  
 void setup() {
+  //--- afichage moniteur (provisoire)
   Serial.begin(9600);
   pinMode(bp,INPUT_PULLUP);
-  mode=digitalRead(bp);  
+  //---lecture du bouton poussoir
+  mode=digitalRead(bp); 
+  //---attribution des 'attach' 
   servobase.attach(3); 
   servobase.write(initbase);
   delay(delaiSetup); 
@@ -95,14 +98,14 @@ void setup() {
 }
  
 void loop() {
- if(mode) demo(); else potards();
+ if(mode) automatique(); else potards();//mode auto si False, potards si True
 }
 
 void affdebug()
 {
-// controle affichage entrée potentiomètre, sortie valeur map 
+//---controle affichage entrée potentiomètre, sortie valeur map  (provisoire)
 //  Serial.println("----------");
- Serial.print(" base : " + String(posbase));
+  Serial.print(" base : " + String(posbase));
   Serial.print(" bras : " + String(posbras));
   Serial.print(" avantbras  : "  + String(posavantbras));
   Serial.print(" poignet : " + String(pospoignet));
@@ -110,16 +113,18 @@ void affdebug()
   Serial.println(" pince : " + String(pospince));
 }
 
-void demo()
+//--- robot en mode automatique
+void automatique()
 {
-    Serial.println("mode démo");
+    Serial.println("mode auto");
   delay(1000);
   if (!digitalRead(bp)) prendre();  
 }
 
+//---robot en mode manuel via les potentomètres
 void potards()
 {
-  Serial.print("mode potards");
+  //Serial.print("mode potards");
 
 //gestion base (AB 7-04-2022)
   consignebase = map(analogRead(potbase), 1023, 0, minbase, maxbase); //lecture du potentiomètre de la base et transformation en degrés entre minbase et maxbase
@@ -131,12 +136,12 @@ void potards()
   posbras = servobras.read();
   if (posbras  < consignebras)servobras.write(posbras +1);else if(posbras  > consignebras) servobras.write(posbras -1); 
 
- //gestion avantbras  
+//gestion avantbras  
   consigneavantbras = map(analogRead(potavantbras), 0, 1023, minavantbras, maxavantbras);
   posavantbras = servoavantbras.read();
   if (posavantbras  < consigneavantbras)servoavantbras.write(posavantbras +1);else if(posavantbras  > consigneavantbras) servoavantbras.write(posavantbras -1); 
 
- //gestion poignet  
+//gestion poignet  
   consignepoignet = map(analogRead(potpoignet), 1023, 0, minpoignet, maxpoignet);
   pospoignet = servopoignet.read();
   if (pospoignet  < consignepoignet)servopoignet.write(pospoignet +1);else if(pospoignet  > consignepoignet) servopoignet.write(pospoignet -1); 
@@ -154,10 +159,12 @@ void potards()
   affdebug(); 
 }
 
+
+//--- fonction prise d'un objet
 void prendre()
 {
 /*  position  base bras  av bras  poignet  main  pince*/ 
-int prendre[6]={0,  15,    44,      28,     94, 155};
+int prendre[6]={141,  117,    62,      29,     98, 130};
 
 posbras = servobras.read();
 posavantbras = servoavantbras.read();
@@ -165,9 +172,17 @@ posavantbras = servoavantbras.read();
 for (int i=1; i<=20; i++)
 {
   servobras.write(posbras+i);
-  servoavantbras.write(posavantbras-i);  
+  servoavantbras.write(posavantbras+i);  
   delay(100);
 }
-
+for (int i=116; i<=141; i++)
+{
+  servobase.write(posbase+i);
+  delay(100);
+}
 delay(5000);
 }
+
+// Fonctions TODO
+// tester_couleur (true/false)
+// deposer_objet
