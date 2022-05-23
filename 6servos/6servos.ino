@@ -41,6 +41,11 @@ occupation des pattes arduino
 #define delaiSetup 20
 #define bp 4
 
+//define capteur couleur
+#define s2  7
+#define s3  8
+#define out 12
+
 // import AB (7-04-2022)
 int inbase, inbras, inavantbras, inpoignet, inmain, inpince ;
 int posbase, posbras, posavantbras, pospoignet, posmain, pospince ;
@@ -48,14 +53,22 @@ int consignebase, consignebras, consigneavantbras, consignepoignet, consignemain
 
 /*
 position  base bras  av bras  poignet  main  pince  
+init      116   143   28        35      98    145
+boite1    14    125   28        110     66    130
+boite2    38    126   30        110     66    130
+boite3    55    75    97        110     66    130
+prendre   141   117    62       29      98    130
+repos     120   136   94        114     89    127
+
+(non validé)
 attrape   0     15    44        28      94
 elevation       38
 lecteur   87    45    78        20      94
-vert      141   0     9         45      94
-bleu      165   30    51        45      94
-rouge     180   36    44        28      94
 
 */
+
+int repos[6]={120,   136,   94,        114,     89,   127};
+int prendre[6]={138,  159,    26,      67,     89, 80};// 123 prise
 
 // tableau min/max/init des servomoteurs
 int minbase=0,        maxbase=180,        initbase=116,
@@ -63,9 +76,14 @@ int minbase=0,        maxbase=180,        initbase=116,
     minavantbras=5,  maxavantbras=135,   initavantbras=28,
     minpoignet=3,    maxpoignet=135,     initpoignet=35,
     minmain=45,       maxmain=135,        initmain=98,
-    minpince=100,     maxpince=155,       initpince=145;
+    minpince=80,     maxpince=155,       initpince=145;
 
 boolean mode=1;
+
+//variable des couleurs
+byte rouge = 0;
+byte vert = 0;
+byte bleu = 0;
  
 Servo servobase, servobras, servoavantbras, servopoignet, servomain, servopince;  // create servo objects to control a servo 
  
@@ -94,6 +112,8 @@ void setup() {
   servopince.attach(11);
   servopince.write(initpince);
   Serial.print(" mode : " + String(mode));
+  delay(1000);
+  if(mode) frepos();
   delay(5000);
 }
  
@@ -118,13 +138,13 @@ void automatique()
 {
     Serial.println("mode auto");
   delay(1000);
-  if (!digitalRead(bp)) prendre();  
+  if (!digitalRead(bp)) fprendre();  
 }
 
 //---robot en mode manuel via les potentomètres
 void potards()
 {
-  //Serial.print("mode potards");
+  Serial.println("mode potards");
 
 //gestion base (AB 7-04-2022)
   consignebase = map(analogRead(potbase), 1023, 0, minbase, maxbase); //lecture du potentiomètre de la base et transformation en degrés entre minbase et maxbase
@@ -161,28 +181,81 @@ void potards()
 
 
 //--- fonction prise d'un objet
-void prendre()
+void fprendre()
 {
 /*  position  base bras  av bras  poignet  main  pince*/ 
-int prendre[6]={141,  117,    62,      29,     98, 130};
-
-posbras = servobras.read();
-posavantbras = servoavantbras.read();
-/*if (posbras  < prendre[1])*/
-for (int i=1; i<=20; i++)
-{
-  servobras.write(posbras+i);
-  servoavantbras.write(posavantbras+i);  
+Serial.println("prendre ! ");
+  do
+  {
+   pospince = servopince.read();
+   if (pospince  < prendre[5])servopince.write(pospince +1);else if(pospince  > prendre[5]) servopince.write(pospince -1); 
+  delay(50);
+  }
+  while (pospince != prendre[5]);
+  do
+  {
+   posbase = servobase.read();
+   if (posbase  < prendre[0])servobase.write(posbase +1);else if(posbase  > prendre[0]) servobase.write(posbase -1); 
+  delay(300);
+  }
+  while (posbase != prendre[0]);
+ 
+ 
+  do
+  {
+   pospoignet = servopoignet.read();
+   if (pospoignet  < prendre[3])servopoignet.write(pospoignet +1);else if(pospoignet  > prendre[3]) servopoignet.write(pospoignet -1); 
   delay(100);
-}
-for (int i=116; i<=141; i++)
-{
-  servobase.write(posbase+i);
+  }
+  while (pospoignet != prendre[3]);
+   do
+  {
+   posavantbras = servoavantbras.read();
+   if (posavantbras  < prendre[2])servoavantbras.write(posavantbras +1);else if(posavantbras  > prendre[2]) servoavantbras.write(posavantbras -1); 
   delay(100);
-}
-delay(5000);
+  }
+  while (posavantbras != prendre[2]);
+   do
+  {
+   posbras = servobras.read();
+   if (posbras  < prendre[1])servobras.write(posbras +1);else if(posbras  > prendre[1]) servobras.write(posbras -1); 
+  delay(250);
+  }
+  while (posbras != prendre[1]);
+    do
+  {
+   pospince = servopince.read();
+   if (pospince  < 123)servopince.write(pospince +1);else if(pospince  > 123) servopince.write(pospince -1); 
+  delay(50);
+  }
+    while (pospince != 123);
 }
 
-// Fonctions TODO
-// tester_couleur (true/false)
-// deposer_objet
+void frepos()
+{
+
+//  repos     120   136   94        114     89    127
+Serial.println("repos ! ");
+
+  do
+  {
+   posbras = servobras.read();
+   if (posbras  < repos[1])servobras.write(posbras +1);else if(posbras  > repos[1]) servobras.write(posbras -1); 
+  delay(500);
+  }
+  while (posbras != repos[1]);
+  do
+  {
+   posavantbras = servoavantbras.read();
+   if (posavantbras  < repos[2])servoavantbras.write(posavantbras +1);else if(posavantbras  > repos[2]) servoavantbras.write(posavantbras -1); 
+  delay(100);
+  }
+  while (posavantbras != repos[2]);
+  do
+  {
+   pospoignet = servopoignet.read();
+   if (pospoignet  < repos[3])servopoignet.write(pospoignet +1);else if(pospoignet  > repos[3]) servopoignet.write(pospoignet -1); 
+  delay(100);
+  }
+  while (pospoignet != repos[3]);
+  }
