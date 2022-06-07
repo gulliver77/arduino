@@ -1,5 +1,5 @@
 /*
-13-05-2022
+02-06-2022
 Dénomination des articulations :
 pince 
 main
@@ -68,27 +68,23 @@ lecteur   87    45    78        20      94
 */
 
 /*  position      base  bras  av bras   poignet   main  pince*/ 
-byte repos[]={   120,  136,  94,       114,      89,   127};
-byte prendre[]={ 112,  166,  47,       40,       86,   135};// 123 prise
-byte testcouleur[]={164,  171,  60,     19,      89,   125};
-/*byte boiterouge[]={55, 75, 97, 110,  66, 130};
-byte boitevert[]={38,  126,  30, 110,  66, 130};
-byte boitebleu[]={14,  125,  28, 110,  66, 130};*/
-byte boite[3][6]={{55, 75, 97, 110,  66, 130},//rouge
-                {38,  126,  30, 110,  66, 130},
-                {14,  125,  28, 110,  66, 130}};//rouge jaune bleu
+byte repos[]= {   120,  136,  94,       114,      89,   127};
+byte prendre[]= { 112,  126,  24,       53,       87,   135};// 123 prise
+byte testcouleur[]= {156,  152,  80,     3,      5,   125};
+byte destination[4][6]= {{130, 166, 47, 40,  86, 80},//jeter
+                        {54, 180, 108, 122,  85, 80},//rouge
+                        {35,  152,  105, 67,  87, 80},//jaune
+                        {13,  150,  105, 55,  87, 80}};//rbleu
 
 //variable des couleurs
-byte rouge = 0;
-byte vert = 0;
-byte bleu = 0;
+byte rouge = 0; byte vert = 0; byte bleu = 0;
 
 // tableau min/max/init des servomoteurs
 byte minbase=0,        maxbase=180,        initbase=116,
     minbras=0,       maxbras=180,        initbras=143,
     minavantbras=5,  maxavantbras=135,   initavantbras=28,
-    minpoignet=3,    maxpoignet=135,     initpoignet=35,
-    minmain=45,       maxmain=135,        initmain=98,
+    minpoignet=3,    maxpoignet=175,     initpoignet=35,
+    minmain=5,       maxmain=175,        initmain=98,
     minpince=80,     maxpince=155,       initpince=145;
 
 boolean mode=1;
@@ -113,10 +109,7 @@ void setup() {
   servopoignet.attach(9); servopoignet.write(initpoignet); delay(delaiSetup); 
   servomain.attach(10); servomain.write(initmain); delay(delaiSetup);
   servopince.attach(11); servopince.write(initpince);
-  
-  
   Serial.print(" mode : " + String(mode));
-  
   delay(1000);
   if(mode) frepos();
   delay(5000);
@@ -142,40 +135,39 @@ void automatique()
   delay(1000);
   if (!digitalRead(bp)) 
   {
-    fprendre();
+    fprendre(); // executer la fonction fprendre qui positione le bras  à postion prendre
     delay(100);
-    fechap();
+    fechap();   // executer la fonction fechape qui eloigne le bras du plateau
     delay(100);
-    int i=20;
-    int couleur=0;
+    fcouleur(); // executer la fonction fcouleur qui positione le bras  à postion couleur   
+    delay(1000);    
+    int nbtest = 20; int couleur=0;
     do 
     {
-    fcouleur();
- Serial.println(" ROUGE: " + String(rouge));
- Serial.println(" VERT: " + String(vert));
- Serial.println(" BLEU: " + String(bleu));
- Serial.print("i : ");Serial.println(i);
- Serial.print("couleur : ");Serial.println(couleur);
+      lecturecouleur();
+//    Serial.println(" ROUGE: " + String(rouge)); Serial.println(" VERT: " + String(vert)); Serial.println(" BLEU: " + String(bleu));
 
-   if((rouge > 5 && rouge < 11) && (vert > 12 && vert < 17) && (bleu > 10 && bleu < 15))
-   {
-   Serial.println("COULEUR ROUGE");
-   couleur=1;
+      if((rouge > 5 && rouge < 11) && (vert > 12 && vert < 17) && (bleu > 10 && bleu < 15))
+      {
+        Serial.println("COULEUR ROUGE");
+        couleur=1;
+      }
+      else if((rouge > 3 && rouge < 7) && (vert > 6 && vert < 10) && (bleu > 8 && bleu < 13))
+      {
+        Serial.println("COULEUR JAUNE");
+        couleur=2;
+      }
+      else if((rouge > 11 && rouge < 15) && (vert > 11 && vert < 15) && (bleu > 7 && bleu < 11))
+      {
+        Serial.println("COULEUR BLEU");
+        couleur=3;
+      }
+    delay(500);
+    nbtest--;
+   Serial.println(" nbtest : " + String(nbtest));
    }
-   if((rouge > 3 && rouge < 7) && (vert > 6 && vert < 10) && (bleu > 8 && bleu < 13))
-   {
-   Serial.println("COULEUR JAUNE");
-   couleur=2;
-   }
-   if((rouge > 11 && rouge < 15) && (vert > 11 && vert < 15) && (bleu > 7 && bleu < 11))
-   {
-   Serial.println("COULEUR BLEU");
-   couleur=3;
-   }
-   delay(500);
-   i--;
-   }
-   while ((i>0) & (couleur==0));
+   while ((nbtest > 0) & (couleur==0));
+   fdestination(couleur);
    Serial.println("sortie ");
   }
 }
@@ -202,6 +194,7 @@ void fechap()
   fbras(servobras.read()-20);
   favantbras(servoavantbras.read()+20);
 }
+
 /******* fonction prendre*****/
 void fprendre()
 {
@@ -215,63 +208,38 @@ Serial.println("prendre ! ");
   fpince(prendre[pince]);
 }
 
-/******* fonction couleur*****/
+/******* fonction de positionnement pour la lecture de la couleur*****/
 void fcouleur()
 {
 Serial.println("test de la couleur ! ");
   fmain(testcouleur[main]);
-  fbase(testcouleur[base]);
+  fbase((testcouleur[base]-5));
   fpoignet(testcouleur[poignet]); 
   favantbras(testcouleur[avantbras]); 
   fbras(testcouleur[bras]); 
-  lecturecouleur();
+  fbase(testcouleur[base]); 
 }
 
-/******* fonction boite rouge*****/
-/* void fboiterouge()
+/******* fonction destination boite (0 = jeter, 1 = rouge, 2 = jaune 3 = bleu) *****/
+void fdestination(int couleurboite) 
 {
-Serial.println("boite rouge ! ");
-  //fpince(minpince);  inutile dans cette fonction
-  fmain(boiterouge[main]);
-  fbase(boiterouge[base]);
-  fpoignet(boiterouge[poignet]);
-  favantbras(boiterouge[avantbras]);
-  fbras(boiterouge[bras]);
-  fpince(boiterouge[pince]);
+  fechap();
+  Serial.println(" couleur boite : " + String(couleurboite));
+  fmain(destination[couleurboite][main]);
+  fbase(destination[couleurboite][base]);
+  fpoignet(destination[couleurboite][poignet]);
+  favantbras(destination[couleurboite][avantbras]);
+  fbras(destination[couleurboite][bras]);
+  fpince(destination[couleurboite][pince]);
+  frepos();
 }
-
-void fboitevert()
-{
-Serial.println("boite verte ! ");
-  //fpince(minpince);  inutile dans cette fonction
-  fmain(boitevert[main]);
-  fbase(boitevert[base]);
-  fpoignet(boitevert[poignet]);
-  favantbras(boitevert[avantbras]);
-  fbras(boitevert[bras]);
-  fpince(boitevert[pince]);
-}
-
-void fboitebleu()
-{
-Serial.println("prendre ! ");
-  //fpince(minpince);  inutile dans cette fonction
-  fmain(boitebleu[main]);
-  fbase(boitebleu[base]);
-  fpoignet(boitebleu[poignet]);
-  favantbras(boitebleu[avantbras]);
-  fbras(boitebleu[bras]);
-  fpince(boitebleu[pince]);
-}
-*/
 
 /****************************************************************
  * 
  * gestion des différents servomoteurs
  * 
  ***************************************************************/
- 
- /***** gestion de la base****/
+/***** gestion de la base****/
 void fbase(byte val_finale) 
 { 
   do
@@ -344,7 +312,6 @@ void fpince(byte val_finale) // fonction qui gere le servomoteur de la pince
   while (pospince != val_finale);
 }
 
-
 /***********************************************
  * 
  * robot en mode manuel via les potentomètres
@@ -405,7 +372,8 @@ void affdebug()
  * lecture  couleur
  * ***************/
 
-void lecturecouleur() {
+void lecturecouleur() //déterminer le RVB de l'objet
+{
  digitalWrite(s2, LOW);
  digitalWrite(s3, LOW);
  rouge = pulseIn(out, digitalRead(out) == HIGH ? LOW : HIGH);
