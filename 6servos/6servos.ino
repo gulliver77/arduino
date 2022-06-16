@@ -109,7 +109,7 @@ Servo servobase, servobras, servoavantbras, servopoignet, servomain, servopince;
   attache_servos();
   Serial.print(" mode : " + String(mode)); //provisoire
   delay(5000);
-  if(mode) frepos();
+  if (mode) frepos();
   delay(2000);
 }
 
@@ -138,33 +138,58 @@ void automatique()
     delay(100);
     fcouleur(); // executer la fonction fcouleur qui positione le bras  à postion couleur   
     delay(1000);    
-    int nbtest = 10; int couleur=0;
-    do 
+//    int nbtest = 10; int couleur=0;
+    int nbtest = 10; int couleurValide = 0 ; int couleurPrecedente = 0; 
+     do 
     {
       lecturecouleur();
-      //détermination de la couleur
+//    Serial.println(" ROUGE: " + String(rouge)); Serial.println(" VERT: " + String(vert)); Serial.println(" BLEU: " + String(bleu));
       if((rouge > 5 && rouge < 11) && (vert > 12 && vert < 17) && (bleu > 10 && bleu < 15))
       {
-        Serial.println("COULEUR ROUGE");
-        couleur=1;
+        if (couleurPrecedente == 1) 
+        {
+          couleurValide = 1;
+          Serial.println("COULEUR ROUGE");
+        }
+        else
+        {
+          couleurPrecedente = 1;  
+          Serial.println("couleur rouge à confirmer");        
+        }
       }
       else if((rouge > 3 && rouge < 7) && (vert > 6 && vert < 10) && (bleu > 8 && bleu < 13))
       {
-        Serial.println("COULEUR JAUNE");
-        couleur=2;
+        if (couleurPrecedente == 2) 
+        {
+          couleurValide = 2;
+          Serial.println("COULEUR JAUNE");
+        }
+        else
+        {
+          couleurPrecedente = 2; 
+          Serial.println("couleur jaune à confirmer");      
+        }
       }
       else if((rouge > 11 && rouge < 15) && (vert > 11 && vert < 15) && (bleu > 7 && bleu < 11))
       {
-        Serial.println("COULEUR BLEU");
-        couleur=3;
+        if (couleurPrecedente == 3) 
+        {
+          couleurValide = 3;
+          Serial.println("COULEUR BLEU");
+        }
+        else
+        {
+          couleurPrecedente = 3;  
+         Serial.println("couleur bleue à confirmer");               
+        }
       }
-    delay(500);
+    delay(1000);
     nbtest--;
-   Serial.println(" nbtest : " + String(nbtest));
    }
-   while ((nbtest > 0) & (couleur==0));
-   fdestination(couleur);
-   Serial.println("sortie ");
+   while ((nbtest > 0) & (couleurValide == 0));
+   /*---------------*/  
+  Serial.println(" sortie après " + String((10-nbtest)) + " tests");
+   fdestination(couleurValide);
    frepos();
   }
 }
@@ -249,7 +274,7 @@ Serial.println("test de la couleur ! ");
 void fdestination(int couleurboite) 
 {
   fechap();
-  Serial.println(" couleur boite : " + String(couleurboite));
+  Serial.println(" déposer dans boite : " + String(couleurboite));
   fmain(destination[couleurboite][main]);
   fbase(destination[couleurboite][base]);
   fpoignet(destination[couleurboite][poignet]);
@@ -258,7 +283,7 @@ void fdestination(int couleurboite)
   fpince(destination[couleurboite][pince]);
   if (couleurboite==0)
     { 
-      Serial.println(" couleur inconnue ! ");      
+      Serial.println(" couleur inconnue, je laisse aux chefs ! ");      
       fechap();
     }
 }
@@ -347,8 +372,7 @@ void fpince(byte val_finale) // fonction qui gere le servomoteur de la pince
  **********************************************/
 void potards() //---
 {
-// Serial.println("mode potards");
-  
+ Serial.println("mode potards"); 
   consignebase = map(analogRead(potbase), 1023, 0, minbase, maxbase); 
   posbase = servobase.read();
   if (posbase  < consignebase)servobase.write(posbase +1);else if(posbase  > consignebase) servobase.write(posbase -1); 
