@@ -23,7 +23,7 @@ occupation des pattes arduino
   pb appuyé au démarrage => potentiometre sinon automatique
   effet de bord tremblottement
 */
-
+//declaration PIN pour les servos
 #define base 0
 #define bras 1
 #define avantbras 2
@@ -66,12 +66,13 @@ attrape   0     15    44        28      94
 elevation       38
 lecteur   87    45    78        20      94
 */
+// base : 118 bras : 130 avantbras  : 36 poignet : 28 main : 90 pince : 155
 
-/*  position      base  bras  av bras   poignet   main  pince*/ 
-byte repos[]= {   120,  136,  94,       114,      89,   127};
-byte prendre[]= { 112,  126,  24,       53,       87,   135};// 123 prise
-byte testcouleur[]= {156,  152,  80,     3,      5,   125};
-byte destination[4][6]= {{130, 166, 47, 40,  86, 80},//jeter
+/*  positions servos      base  bras  av bras   poignet   main  pince*/ 
+byte repos[]= { 118,      130,    36,     30,       90,     155};
+byte prendre[] = {113,  150,  85, 3, 88, 135};//pince ouverte 80, pince prise 130
+byte testcouleur[]= {180,  140,  62,     15,      5,   135};
+byte destination[4][6]= {{142, 158, 101, 3,  103, 80},//jeter
                         {54, 180, 108, 122,  85, 80},//rouge
                         {35,  152,  105, 67,  87, 80},//jaune
                         {13,  150,  105, 55,  87, 80}};//rbleu
@@ -80,49 +81,44 @@ byte destination[4][6]= {{130, 166, 47, 40,  86, 80},//jeter
 byte rouge = 0; byte vert = 0; byte bleu = 0;
 
 // tableau min/max/init des servomoteurs
-byte minbase=0,        maxbase=180,        initbase=116,
-    minbras=0,       maxbras=180,        initbras=143,
-    minavantbras=5,  maxavantbras=135,   initavantbras=28,
-    minpoignet=3,    maxpoignet=175,     initpoignet=35,
-    minmain=5,       maxmain=175,        initmain=98,
-    minpince=80,     maxpince=155,       initpince=145;
 
+byte minbase=0,        maxbase=180,        initbase=118,
+    minbras=0,       maxbras=180,        initbras=130,
+    minavantbras=5,  maxavantbras=135,   initavantbras=36,
+    minpoignet=3,    maxpoignet=175,     initpoignet=30,
+    minmain=5,       maxmain=175,        initmain=90,
+    minpince=80,     maxpince=155,       initpince=155;
+
+// mode 0=auto, mode 1=potentiomètres
 boolean mode=1;
 
-Servo servobase, servobras, servoavantbras, servopoignet, servomain, servopince;  // create servo objects to control a servo 
+// create servo objects to control a servo
+Servo servobase, servobras, servoavantbras, servopoignet, servomain, servopince;   
 
 /***************
     SETUP
 ****************/
- 
-void setup() {
+ void setup() {
   Serial.begin(9600);
   pinMode(bp,INPUT_PULLUP);
   pinMode(s2,OUTPUT);
   pinMode(s3,OUTPUT);
   pinMode(out,INPUT);
-  mode=digitalRead(bp);   //---lecture du bouton poussoir pour déterminer le mode
-//---attribution des 'attach' 
-  servobase.attach(3);servobase.write(initbase); delay(delaiSetup); 
-  servobras.attach(5);servobras.write(initbras); delay(delaiSetup);   
-  servoavantbras.attach(6); servoavantbras.write(initavantbras); delay(delaiSetup); 
-  servopoignet.attach(9); servopoignet.write(initpoignet); delay(delaiSetup); 
-  servomain.attach(10); servomain.write(initmain); delay(delaiSetup);
-  servopince.attach(11); servopince.write(initpince);
-  Serial.print(" mode : " + String(mode));
-  delay(1000);
-  if(mode) frepos();
+//---lecture du bouton poussoir pour déterminer le mode  
+  mode=digitalRead(bp);   
+  attache_servos();
+  Serial.print(" mode : " + String(mode)); //provisoire
   delay(5000);
+  if(mode) frepos();
+  delay(2000);
 }
 
 /****************
   LOOP
 *****************/
- 
-void loop() {
+ void loop() {
  if(mode) automatique(); else potards();//mode auto si False, potards si True
 }
-
 
 /***********************************************
  * 
@@ -131,22 +127,22 @@ void loop() {
  **********************************************/
 void automatique()
 {
-//Serial.println("mode auto");
+  Serial.println("Attente mise en service");
   delay(1000);
   if (!digitalRead(bp)) 
   {
+    attache_servos();
     fprendre(); // executer la fonction fprendre qui positione le bras  à postion prendre
     delay(100);
     fechap();   // executer la fonction fechape qui eloigne le bras du plateau
     delay(100);
     fcouleur(); // executer la fonction fcouleur qui positione le bras  à postion couleur   
     delay(1000);    
-    int nbtest = 20; int couleur=0;
+    int nbtest = 10; int couleur=0;
     do 
     {
       lecturecouleur();
-//    Serial.println(" ROUGE: " + String(rouge)); Serial.println(" VERT: " + String(vert)); Serial.println(" BLEU: " + String(bleu));
-
+      //détermination de la couleur
       if((rouge > 5 && rouge < 11) && (vert > 12 && vert < 17) && (bleu > 10 && bleu < 15))
       {
         Serial.println("COULEUR ROUGE");
@@ -169,9 +165,34 @@ void automatique()
    while ((nbtest > 0) & (couleur==0));
    fdestination(couleur);
    Serial.println("sortie ");
+   frepos();
   }
 }
 
+/****************
+ * attache et detache
+ * **************/
+ void attache_servos()
+ {
+ //---attribution des 'attach' 
+  servobase.attach(3);servobase.write(initbase); delay(delaiSetup); 
+  servobras.attach(5);servobras.write(initbras); delay(delaiSetup);   
+  servoavantbras.attach(6); servoavantbras.write(initavantbras); delay(delaiSetup); 
+  servopoignet.attach(9); servopoignet.write(initpoignet); delay(delaiSetup); 
+  servomain.attach(10); servomain.write(initmain); delay(delaiSetup);
+  servopince.attach(11); servopince.write(initpince); 
+ 
+ }
+
+void detache_servos()
+{
+  servobase.detach();
+  servobras.detach();  
+  servoavantbras.detach(); 
+  servopoignet.detach();
+  servomain.detach(); 
+  servopince.detach();
+}
 /****************************************************************
  * 
  * fonctions action du robot
@@ -181,16 +202,20 @@ void automatique()
 /******* fonction repos****/
 void frepos()
 {
-//Serial.println("repos ! ");
+  fbase(repos[base]);
+  fmain(repos[main]);
+  fpince(repos[pince]);
   fbras(repos[bras]);
-  favantbras(repos[avantbras]);
   fpoignet(repos[poignet]);
+  favantbras(repos[avantbras]);
+  detache_servos();
+  Serial.println("Dodo robot ! ");
 }
 
 /******* fonction echap (position intermédiaire du robot)****/
 void fechap()
 {
-  Serial.println("echappe ! ");
+ // Serial.println(" ! ");
   fbras(servobras.read()-20);
   favantbras(servoavantbras.read()+20);
 }
@@ -198,7 +223,7 @@ void fechap()
 /******* fonction prendre*****/
 void fprendre()
 {
-Serial.println("prendre ! ");
+  Serial.println("prendre ! ");
   fpince(minpince);//ouverture maximale de la pince 
   fmain(prendre[main]);
   fbase(prendre[base]);
@@ -212,12 +237,12 @@ Serial.println("prendre ! ");
 void fcouleur()
 {
 Serial.println("test de la couleur ! ");
-  fmain(testcouleur[main]);
-  fbase((testcouleur[base]-5));
-  fpoignet(testcouleur[poignet]); 
-  favantbras(testcouleur[avantbras]); 
-  fbras(testcouleur[bras]); 
   fbase(testcouleur[base]); 
+  fpoignet(testcouleur[poignet]); 
+  favantbras(testcouleur[avantbras]);
+  fmain(testcouleur[main]);  
+  fbras(testcouleur[bras]);
+  fbase((testcouleur[base]-4));
 }
 
 /******* fonction destination boite (0 = jeter, 1 = rouge, 2 = jaune 3 = bleu) *****/
@@ -231,7 +256,11 @@ void fdestination(int couleurboite)
   favantbras(destination[couleurboite][avantbras]);
   fbras(destination[couleurboite][bras]);
   fpince(destination[couleurboite][pince]);
-  frepos();
+  if (couleurboite==0)
+    { 
+      Serial.println(" couleur inconnue ! ");      
+      fechap();
+    }
 }
 
 /****************************************************************
@@ -246,11 +275,10 @@ void fbase(byte val_finale)
   {
    posbase = servobase.read();
    if (posbase  < val_finale)servobase.write(posbase +1);else if(posbase  > val_finale) servobase.write(posbase -1); 
-  delay(300);
+  delay(50);
   }
   while (posbase != val_finale); 
 }
-
 
 /****** gestion du bras *****/
 void fbras(byte val_finale) 
@@ -259,7 +287,7 @@ void fbras(byte val_finale)
   {
    posbras = servobras.read();
    if (posbras  < val_finale)servobras.write(posbras +1);else if(posbras  > val_finale) servobras.write(posbras -1); 
-  delay(250);
+  delay(50);
   }
   while (posbras != val_finale); 
 }
@@ -271,7 +299,7 @@ void favantbras(byte val_finale)
   {
    posavantbras = servoavantbras.read();
    if (posavantbras  < val_finale)servoavantbras.write(posavantbras +1);else if(posavantbras  > val_finale) servoavantbras.write(posavantbras -1); 
-  delay(100);
+  delay(50);
   }
   while (posavantbras != val_finale);
 }
@@ -283,7 +311,7 @@ void fpoignet(byte val_finale)
   {
    pospoignet = servopoignet.read();
    if (pospoignet  < val_finale)servopoignet.write(pospoignet +1);else if(pospoignet  > val_finale) servopoignet.write(pospoignet -1); 
-  delay(100);
+  delay(50);
   }
   while (pospoignet != val_finale); 
 }
@@ -295,7 +323,7 @@ void fmain(byte val_finale)
   {
    posmain = servomain.read();
    if (posmain  < val_finale)servomain.write(posmain +1);else if(posmain  > val_finale) servomain.write(posmain -1); 
-  delay(100);
+  delay(50);
   }
   while (posmain != val_finale);   
 }
@@ -314,7 +342,7 @@ void fpince(byte val_finale) // fonction qui gere le servomoteur de la pince
 
 /***********************************************
  * 
- * robot en mode manuel via les potentomètres
+ * robot en mode manuel via les potentiomètres
  * 
  **********************************************/
 void potards() //---
@@ -354,7 +382,7 @@ void potards() //---
 }
  
 /***** *************************
- affichage pour contrôle
+ affichage pour contrôle (provisoire)
 *******************************/
 void affdebug()
 {
@@ -371,16 +399,13 @@ void affdebug()
 /********************
  * lecture  couleur
  * ***************/
-
-void lecturecouleur() //déterminer le RVB de l'objet
+void lecturecouleur()
 {
  digitalWrite(s2, LOW);
  digitalWrite(s3, LOW);
  rouge = pulseIn(out, digitalRead(out) == HIGH ? LOW : HIGH);
-
  digitalWrite(s3, HIGH);
  bleu = pulseIn(out, digitalRead(out) == HIGH ? LOW : HIGH);
-
  digitalWrite(s2, HIGH);
  vert = pulseIn(out, digitalRead(out) == HIGH ? LOW : HIGH); 
 }
