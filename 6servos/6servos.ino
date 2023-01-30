@@ -1,4 +1,5 @@
-# Code du robot "tri couleurs"
+/*  Code du robot "tri couleurs" */
+/* v2023-01-30 */
 
 ```
 /*
@@ -26,7 +27,7 @@
 #define out 12 //fil vert
 
 //déclaration bouton poussoir
-#define bp 4 
+#define bp 4
 
 /* déclaration PIN pour les 6 potards */
 #define potbase A0
@@ -48,15 +49,16 @@ byte repos[] = {           118,      130,    36,         30,      90,     155};
 byte prendre[] = {        113,      150,    85,         3,       88,     135};//pince ouverte 80, 135=prise
 byte testcouleur[] = {     180,      140,    62,         15,      5,      135};
 byte destination[4][6] = {{142,      158,    101,         3,     103,      80}, //jeter
-                          { 54,       180,    108,        122,    85,       80},//rouge
-                          { 35,       152,    105,        67,     87,       80},//jaune
-                          { 13,       150,    105,        55,     87,       80}};//bleu
+  { 54,       180,    108,        122,    85,       80},//rouge
+  { 35,       152,    105,        67,     87,       80},//jaune
+  { 13,       150,    105,        55,     87,       80}
+};//bleu
 
 //variable des couleurs fondamentales détectées par le capteur
 byte rouge = 0; byte vert = 0; byte bleu = 0;
 
 // tableau min/max/init des servomoteurs
- byte minbase = 0,        maxbase = 180,        initbase = 118,
+byte minbase = 0,        maxbase = 180,        initbase = 118,
      minbras = 0,       maxbras = 180,        initbras = 130,
      minavantbras = 5,  maxavantbras = 135,   initavantbras = 36,
      minpoignet = 3,    maxpoignet = 175,     initpoignet = 30,
@@ -80,16 +82,16 @@ void setup() {
   pinMode(s3, OUTPUT);
   pinMode(out, INPUT); // entrée capteur couleur
   //---lecture du bouton poussoir pour déterminer le mode
-  attache_servos(); 
+  attache_servos();
   Serial.println(" mode : " + String(mode));
-//  delay(5000);
+  //  delay(5000);
   mode = digitalRead(bp); // mode=1 si non appuyé
   if (mode)
   {
     frepos();
     detache_servos();
   }
-//  delay(500);
+  //  delay(500);
 }
 
 /****************
@@ -343,7 +345,7 @@ void fpince(byte val_finale) // fonction qui gere le servomoteur de la pince
 /***********************************************
    robot en mode manuel via les potentiomètres
  **********************************************/
-void potards() 
+void potards()
 {
   Serial.println("mode potards");
   consignebase = map(analogRead(potbase), 1023, 0, minbase, maxbase);
